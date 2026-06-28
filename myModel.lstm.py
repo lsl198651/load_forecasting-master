@@ -118,7 +118,7 @@ train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = LSTMPredictor(input_size=len(features_cols), hidden_size=64, num_layers=2, output_size=FORECAST_HORIZON).to(
+model = LSTMPredictor(input_size=len(features_cols), hidden_size=64, num_layers=3, output_size=FORECAST_HORIZON).to(
     device)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LR)
