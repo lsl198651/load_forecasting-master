@@ -33,7 +33,7 @@ class ModelManager:
             "provider": "baidu"
         },
         "dashscope": {
-            "name": "阿里通义千问",
+            "name": "阿里百炼",
             "description": "Qwen-Plus 模型，推理速度快",
             "base_url": os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
             "model": os.getenv("DASHSCOPE_MODEL", "qwen-plus"),
@@ -370,6 +370,18 @@ def call_ai_model(prompt, model_key=None, debug_mode=None, max_retries=None, tim
         except APIError as e:
             error_msg = f"❌ API 错误: {str(e)}"
             print(f"[WARNING] 第 {attempt + 1} 次尝试失败: {error_msg}")
+            if debug_mode:
+                import httpx
+                actual_url = f"{model_config['base_url']}/chat/completions"
+                print(f"[DEBUG] 实际请求 URL: {actual_url}")
+                print(f"[DEBUG] 请求模型: {model_config['model']}")
+                print(f"[DEBUG] 完整错误信息: {e}")
+                if hasattr(e, 'response'):
+                    print(f"[DEBUG] 响应状态码: {e.response.status_code}")
+                    try:
+                        print(f"[DEBUG] 响应内容: {e.response.text[:2000]}")
+                    except:
+                        pass
             last_error = e
             if attempt < max_retries - 1:
                 wait_time = (attempt + 1) * 2

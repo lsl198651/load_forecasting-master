@@ -231,7 +231,7 @@ def generate_analysis_report(request):
         prompt = build_analyst_prompt(stats, anomalies_df)
 
         data = json.loads(request.body.decode('utf-8')) if request.body else {}
-        model_key = data.get('model', 'qianfan')
+        model_key = data.get('model', os.getenv('DEFAULT_MODEL', 'dashscope'))
 
         report = call_ai_model(prompt, model_key=model_key)
         _last_report_content = report

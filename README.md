@@ -6,7 +6,7 @@
 
 - **⚡ LSTM 深度学习预测**：采用 PyTorch LSTM 模型，支持 24/72 小时负荷预测，精度高、响应快
 - **🔍 智能异常检测**：基于 Z-score 统计方法，实时识别负荷异常，预警调度风险
-- **🤖 AI 智能报告生成**：支持百度千帆、阿里通义千问、字节豆包、科大讯飞星火等多种大模型
+- **🤖 AI 智能报告生成**：支持百度千帆、阿里百炼、字节豆包、科大讯飞星火等多种大模型
 - **📊 可视化仪表板**：现代化 Web 界面，实时图表展示，交互式数据分析体验
 - **📥 多格式报告导出**：支持 Markdown、HTML、TXT 三种格式导出
 - **💾 模型持久化**：训练好的模型自动保存，支持复用和加载
@@ -19,7 +19,7 @@
 | **前端** | Bootstrap 5 + Chart.js | 响应式界面，交互式图表 |
 | **后端** | Django 4.x + Django REST Framework | RESTful API 服务 |
 | **算法** | PyTorch LSTM | 深度学习负荷预测模型 |
-| **大模型** | 百度千帆 / 阿里通义千问 / 字节豆包 / 科大讯飞星火 | AI 报告生成 |
+| **大模型** | 百度千帆 / 阿里百炼 / 字节豆包 / 科大讯飞星火 | AI 报告生成 |
 | **数据处理** | Pandas + NumPy + scikit-learn | 数据预处理与特征工程 |
 | **数据库** | SQLite | 轻量级数据库，无需额外安装 |
 
@@ -158,7 +158,7 @@ load_forecasting-master/
 | 模型 | Key | 说明 |
 |------|-----|------|
 | 百度千帆 | `qianfan` | ERNIE-4.0 大模型，中文理解能力强 |
-| 阿里通义千问 | `dashscope` | Qwen-Plus 模型，推理速度快 |
+| 阿里百炼 | `dashscope` | Qwen-Plus 模型，推理速度快 |
 | 字节豆包 | `doubao` | Doubao-3 模型，响应迅速 |
 | 科大讯飞星火 | `xunfei` | Spark-4.0 模型，专业领域能力强 |
 
@@ -171,7 +171,7 @@ load_forecasting-master/
 QIANFAN_API_KEY=your_qianfan_api_key
 QIANFAN_MODEL=ernie-4.0-8k-latest
 
-# 阿里通义千问
+# 阿里百炼
 DASHSCOPE_API_KEY=your_dashscope_api_key
 DASHSCOPE_MODEL=qwen-plus
 

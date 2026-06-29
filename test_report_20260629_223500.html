@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>电力负荷预测分析报告</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', sans-serif; margin: 40px; }
+        h1 { color: #2c3e50; }
+        h2 { color: #3498db; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #3498db; color: white; }
+        .metadata { background: #f5f5f5; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>电力负荷预测分析报告</h1>
+    <div class="metadata">
+        <p><strong>生成时间</strong>: 2026-06-29 22:35:00</p>
+        <p><strong>预测日期</strong>: 2026-06-30</p>
+        <p><strong>预测时长</strong>: 24小时</p>
+        <p><strong>模型版本</strong>: LSTM_24h_20260629</p>
+    </div>
+
+    <h2>一、预测统计信息</h2>
+    <table>
+        <tr><th>指标</th><th>数值</th></tr>
+        <tr><td>预测最大负荷(MW)</td><td>5240.5</td></tr>
+        <tr><td>预计峰值出现时间</td><td>18:45 - 19:15</td></tr>
+        <tr><td>预测最小负荷(MW)</td><td>1620.3</td></tr>
+        <tr><td>预计谷值出现时间</td><td>03:30 - 04:00</td></tr>
+        <tr><td>平均负荷(MW)</td><td>3450.2</td></tr>
+        <tr><td>峰谷差(MW)</td><td>3620.2</td></tr>
+    </table>
+
+    <h2>二、异常识别结果</h2>
+    <table>
+        <tr><th>时间</th><th>异常类型</th><th>偏离幅度</th><th>风险等级</th></tr>
+<tr><td>07:30</td><td>负荷突增</td><td>+450 MW</td><td>高(红色)</td></tr>
+<tr><td>14:15</td><td>持续偏高</td><td>+12.5%</td><td>中(橙色)</td></tr>
+    </table>
+
+    <h2>三、AI分析简报</h2>
+    <div style="background: #e8f4f8; padding: 20px; border-radius: 5px;">
+<h3>一、关键结论<br>明日负荷水平较高，峰值预计在晚高峰时段出现。</h3><p><h3>二、风险提示<br>早高峰时段存在负荷突增风险，需关注调峰能力。</h3><p><h3>三、运行建议<br>建议提前安排备用容量，确保调峰裕度充足。    </div>
+
+    <hr>
+    <p style="color: #7f8c8d; text-align: center;">本报告由电力负荷预测与智能分析系统自动生成</p>
+</body>
+</html>

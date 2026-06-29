@@ -3,9 +3,27 @@ import sys
 import time
 import subprocess
 import webbrowser
+import threading
 
 sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
+
+def read_output(stream, prefix):
+    """实时读取并输出进程的stdout/stderr"""
+    while True:
+        try:
+            line = stream.readline()
+            if line:
+                print(f"[{prefix}] {line.rstrip()}")
+            else:
+                break
+        except UnicodeDecodeError:
+            raw_line = stream.readline()
+            if raw_line:
+                line = raw_line.decode('gbk', errors='replace')
+                print(f"[{prefix}] {line.rstrip()}")
+            else:
+                break
 
 def main():
     print("=" * 50)
@@ -21,8 +39,17 @@ def main():
         cwd=server_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
+        encoding='gbk',
+        errors='replace'
     )
+
+    stdout_thread = threading.Thread(target=read_output, args=(process.stdout, 'OUT'))
+    stderr_thread = threading.Thread(target=read_output, args=(process.stderr, 'ERR'))
+    stdout_thread.daemon = True
+    stderr_thread.daemon = True
+    stdout_thread.start()
+    stderr_thread.start()
 
     print("[2/3] Waiting for server to start...")
     for i in range(5):
@@ -40,8 +67,7 @@ def main():
     print("=" * 50)
 
     try:
-        while True:
-            time.sleep(1)
+        process.wait()
     except KeyboardInterrupt:
         print("\nStopping server...")
         process.terminate()
