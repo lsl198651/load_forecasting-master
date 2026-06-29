@@ -31,7 +31,7 @@ myModel_lstm = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(myModel_lstm)
 LoadForecaster = myModel_lstm.LoadForecaster
 
-from generate_report import build_analyst_prompt, call_qianfan_agent
+from generate_report import build_analyst_prompt, call_ai_model, call_qianfan_agent, ModelManager
 
 
 # 全局变量存储预测器实例和报告内容
@@ -230,7 +230,10 @@ def generate_analysis_report(request):
         anomalies_df = pd.DataFrame(_prediction_results['anomalies'])
         prompt = build_analyst_prompt(stats, anomalies_df)
 
-        report = call_qianfan_agent(prompt)
+        data = json.loads(request.body.decode('utf-8')) if request.body else {}
+        model_key = data.get('model', 'qianfan')
+
+        report = call_ai_model(prompt, model_key=model_key)
         _last_report_content = report
 
         report_data = {

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -130,10 +131,21 @@
             font-weight: 500;
         }
 
-        .stat-card.max { border-left-color: #f5576c; }
-        .stat-card.min { border-left-color: #4facfe; }
-        .stat-card.avg { border-left-color: #11998e; }
-        .stat-card.anomaly { border-left-color: #f093fb; }
+        .stat-card.max {
+            border-left-color: #f5576c;
+        }
+
+        .stat-card.min {
+            border-left-color: #4facfe;
+        }
+
+        .stat-card.avg {
+            border-left-color: #11998e;
+        }
+
+        .stat-card.anomaly {
+            border-left-color: #f093fb;
+        }
 
         .btn {
             border-radius: 10px;
@@ -207,14 +219,16 @@
             margin-bottom: 8px;
         }
 
-        .form-select, .form-control {
+        .form-select,
+        .form-control {
             border-radius: 10px;
             padding: 10px 15px;
             border: 2px solid #e9ecef;
             transition: all 0.3s ease;
         }
 
-        .form-select:focus, .form-control:focus {
+        .form-select:focus,
+        .form-control:focus {
             border-color: #667eea;
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
@@ -272,7 +286,9 @@
             overflow-y: auto;
         }
 
-        .report-content h1, .report-content h2, .report-content h3 {
+        .report-content h1,
+        .report-content h2,
+        .report-content h3 {
             color: #667eea;
             margin-top: 20px;
             margin-bottom: 12px;
@@ -285,7 +301,8 @@
             border-collapse: collapse;
         }
 
-        .report-content th, .report-content td {
+        .report-content th,
+        .report-content td {
             padding: 10px 15px;
             border: 1px solid #e0e0e0;
             text-align: left;
@@ -420,8 +437,15 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
 
         .pulse {
@@ -429,6 +453,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="main-container">
         <div class="header">
@@ -534,7 +559,8 @@
                     <div class="card-header">
                         <i class="fas fa-chart-line"></i>
                         负荷预测概览
-                        <span style="margin-left: auto; font-size: 14px; font-weight: 400; opacity: 0.9;" id="forecastRangeLabel">
+                        <span style="margin-left: auto; font-size: 14px; font-weight: 400; opacity: 0.9;"
+                            id="forecastRangeLabel">
                             未来24小时
                         </span>
                     </div>
@@ -585,7 +611,8 @@
                     <div class="card-header">
                         <i class="fas fa-circle-info"></i>
                         预测详情
-                        <span style="margin-left: auto; font-size: 13px; font-weight: 400; opacity: 0.9;" id="modelInfo">
+                        <span style="margin-left: auto; font-size: 13px; font-weight: 400; opacity: 0.9;"
+                            id="modelInfo">
                             模型: 尚未训练
                         </span>
                     </div>
@@ -616,7 +643,8 @@
                     <div class="card-header">
                         <i class="fas fa-triangle-exclamation"></i>
                         异常识别结果
-                        <span style="margin-left: auto; font-size: 13px; font-weight: 400; opacity: 0.9;" id="anomalyBadge">
+                        <span style="margin-left: auto; font-size: 13px; font-weight: 400; opacity: 0.9;"
+                            id="anomalyBadge">
                             共 0 个异常
                         </span>
                     </div>
@@ -650,19 +678,31 @@
                         <i class="fas fa-wand-magic-sparkles"></i>
                         AI智能分析简报
                         <div style="margin-left: auto; display: flex; gap: 10px;">
+                            <div class="model-selector">
+                                <select id="modelSelector" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="qianfan">🔵 百度千帆</option>
+                                    <option value="dashscope">🟠 阿里通义千问</option>
+                                    <option value="doubao">🟢 字节豆包</option>
+                                    <option value="xunfei">🔴 科大讯飞星火</option>
+                                </select>
+                            </div>
                             <button class="btn btn-warning btn-sm" onclick="generateReport()">
                                 <i class="fas fa-wand-magic-sparkles"></i>
                                 生成简报
                             </button>
                             <div class="btn-group">
-                                <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <button type="button" class="btn btn-success btn-sm dropdown-toggle"
+                                    data-bs-toggle="dropdown">
                                     <i class="fas fa-download"></i>
                                     导出报告
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="exportReport('md')"><i class="fab fa-markdown"></i> Markdown 格式</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="exportReport('html')"><i class="fab fa-html5"></i> HTML 格式</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="exportReport('txt')"><i class="fas fa-file-alt"></i> 纯文本格式</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="exportReport('md')"><i
+                                                class="fab fa-markdown"></i> Markdown 格式</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="exportReport('html')"><i
+                                                class="fab fa-html5"></i> HTML 格式</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="exportReport('txt')"><i
+                                                class="fas fa-file-alt"></i> 纯文本格式</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -690,12 +730,12 @@
         let predictionResults = null;
         let selectedModel = null;
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadSavedModels();
             initChart();
         });
 
-        document.getElementById('modelMode').addEventListener('change', function() {
+        document.getElementById('modelMode').addEventListener('change', function () {
             const savedGroup = document.getElementById('savedModelsGroup');
             const epochsGroup = document.getElementById('epochsGroup');
             if (this.value === 'saved') {
@@ -878,25 +918,25 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
             })
-            .then(r => r.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    fetchPredictionResults();
-                    document.getElementById('forecastRangeLabel').textContent = `未来${forecastHours}小时`;
-                    if (data.model_name) {
-                        document.getElementById('modelInfo').textContent = `模型: ${data.model_name}`;
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        fetchPredictionResults();
+                        document.getElementById('forecastRangeLabel').textContent = `未来${forecastHours}小时`;
+                        if (data.model_name) {
+                            document.getElementById('modelInfo').textContent = `模型: ${data.model_name}`;
+                        }
+                        loadSavedModels();
+                    } else {
+                        alert('预测失败: ' + data.message);
+                        resetButton();
                     }
-                    loadSavedModels();
-                } else {
-                    alert('预测失败: ' + data.message);
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('预测出错: ' + err.message);
                     resetButton();
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('预测出错: ' + err.message);
-                resetButton();
-            });
+                });
         }
 
         function resetButton() {
@@ -1021,31 +1061,41 @@
                 return;
             }
 
+            const selectedModel = document.getElementById('modelSelector').value;
+            const modelNames = {
+                'qianfan': '百度千帆',
+                'dashscope': '阿里通义千问',
+                'doubao': '字节豆包',
+                'xunfei': '科大讯飞星火'
+            };
+
             document.getElementById('reportLoading').classList.add('active');
             document.getElementById('reportContent').style.display = 'none';
             document.getElementById('reportEmpty').style.display = 'none';
+            document.querySelector('.loading-text').textContent = `正在调用${modelNames[selectedModel]}大模型生成分析简报...`;
 
             fetch('/api/generate_report/', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: selectedModel })
             })
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('reportLoading').classList.remove('active');
-                if (data.status === 'success') {
-                    document.getElementById('reportContent').style.display = 'block';
-                    document.getElementById('reportContent').innerHTML = marked.parse(data.report);
-                } else {
-                    alert('生成简报失败: ' + data.message);
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('reportLoading').classList.remove('active');
+                    if (data.status === 'success') {
+                        document.getElementById('reportContent').style.display = 'block';
+                        document.getElementById('reportContent').innerHTML = marked.parse(data.report);
+                    } else {
+                        alert('生成简报失败: ' + data.message);
+                        document.getElementById('reportEmpty').style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('reportLoading').classList.remove('active');
                     document.getElementById('reportEmpty').style.display = 'block';
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById('reportLoading').classList.remove('active');
-                document.getElementById('reportEmpty').style.display = 'block';
-                alert('生成简报出错: ' + err.message);
-            });
+                    alert('生成简报出错: ' + err.message);
+                });
         }
 
         function exportReport(format) {
@@ -1071,4 +1121,5 @@
         }
     </script>
 </body>
+
 </html>

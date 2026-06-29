@@ -21,19 +21,16 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [3/4] Configuring Baidu Qianfan API...
-echo Please set QIANFAN_API_KEY in system environment variables,
-echo or configure it directly in generate_report.py file.
+echo [3/4] Configuring AI models...
+echo Please configure API keys in .env file for:
+echo   - QIANFAN_API_KEY (Baidu Qianfan)
+echo   - DASHSCOPE_API_KEY (Alibaba DashScope)
+echo   - DOUBAN_API_KEY (ByteDance Doubao)
+echo   - XUNFEI_API_KEY (iFlytek Spark)
 
 echo.
-echo [4/4] Starting Django server...
+echo [4/4] Starting server and opening browser...
 cd /d "%~dp0"
-cd server
-python manage.py runserver 127.0.0.1:8000
+python start_server.py
 
-echo.
-echo ========================================
-echo System started successfully!
-echo Please visit: http://127.0.0.1:8000/dashboard/
-echo ========================================
 pause

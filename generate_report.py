@@ -17,16 +17,77 @@ try:
 except ImportError:
     print("[INFO] 未安装 python-dotenv，将从环境变量读取配置")
 
+# ==========================================
+# 模型配置管理器 - 支持多模型切换
+# ==========================================
+class ModelManager:
+    MODELS = {
+        "qianfan": {
+            "name": "百度千帆",
+            "description": "ERNIE-4.0 大模型，中文理解能力强",
+            "base_url": os.getenv("QIANFAN_BASE_URL", "https://qianfan.baidubce.com/v2"),
+            "model": os.getenv("QIANFAN_MODEL", "ernie-4.0-8k-latest"),
+            "api_key_env": "QIANFAN_API_KEY",
+            "test_host": "qianfan.baidubce.com",
+            "free": True,
+            "provider": "baidu"
+        },
+        "dashscope": {
+            "name": "阿里通义千问",
+            "description": "Qwen-Plus 模型，推理速度快",
+            "base_url": os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
+            "model": os.getenv("DASHSCOPE_MODEL", "qwen-plus"),
+            "api_key_env": "DASHSCOPE_API_KEY",
+            "test_host": "dashscope.aliyuncs.com",
+            "free": True,
+            "provider": "alibaba"
+        },
+        "doubao": {
+            "name": "字节豆包",
+            "description": "Doubao-3 模型，响应迅速",
+            "base_url": os.getenv("DOUBAN_BASE_URL", "https://api.doubao.com/v1"),
+            "model": os.getenv("DOUBAN_MODEL", "Doubao-3-4k"),
+            "api_key_env": "DOUBAN_API_KEY",
+            "test_host": "api.doubao.com",
+            "free": True,
+            "provider": "bytedance"
+        },
+        "xunfei": {
+            "name": "科大讯飞星火",
+            "description": "Spark-4.0 模型，专业领域能力强",
+            "base_url": "https://spark-api.xf-yun.com/v4/chat/completions",
+            "model": os.getenv("XUNFEI_MODEL", "spark-4.0"),
+            "api_key_env": "XUNFEI_API_KEY",
+            "app_id_env": "XUNFEI_APP_ID",
+            "api_secret_env": "XUNFEI_API_SECRET",
+            "test_host": "spark-api.xf-yun.com",
+            "free": True,
+            "provider": "xunfei",
+            "special": True
+        }
+    }
+
+    @classmethod
+    def get_available_models(cls):
+        """获取所有可用模型列表"""
+        return {key: cls.MODELS[key] for key in cls.MODELS}
+
+    @classmethod
+    def get_model_config(cls, model_key):
+        """获取指定模型的配置"""
+        return cls.MODELS.get(model_key)
+
+    @classmethod
+    def get_default_model(cls):
+        """获取默认模型"""
+        default_key = os.getenv("DEFAULT_MODEL", "qianfan")
+        return default_key, cls.MODELS.get(default_key, cls.MODELS["qianfan"])
+
 
 # ==========================================
 # 1. 模拟前置 PyTorch 模型的输出结果
 # ==========================================
 def get_model_outputs():
-    """
-    在实际业务中，这部分数据来自您之前的 PyTorch LSTM 模型和异常检测引擎。
-    这里我们构造一个标准的字典和DataFrame来模拟输出。
-    """
-    # 预测统计指标 (未来24小时)
     forecast_stats = {
         "预测日期": (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),
         "预测时间粒度": "5分钟/点 (共288个点)",
@@ -36,18 +97,14 @@ def get_model_outputs():
         "预计谷值出现时间": "03:30 - 04:00",
         "平均负荷(MW)": 3450.2,
         "峰谷差(MW)": 3620.2,
-        "95%置信区间最大宽度(MW)": 215.0,  # 反映预测不确定性
+        "95%置信区间最大宽度(MW)": 215.0,
         "气象关联特征": "明日有强冷空气南下，预计降温8-10度，伴有5级阵风"
     }
 
-    # 异常识别结果 (来自任务三的规则引擎)
     anomalies_data = [
-        {"时间": "07:30", "异常类型": "负荷突增", "实际/预测负荷": 3150.0, "偏离幅度": "+450 MW",
-         "风险等级": "高(红色)"},
-        {"时间": "14:15", "异常类型": "持续偏高(趋势偏离)", "实际/预测负荷": 4850.0, "偏离幅度": "+12.5%",
-         "风险等级": "中(橙色)"},
-        {"时间": "21:00", "异常类型": "负荷突降", "实际/预测负荷": 2800.0, "偏离幅度": "-380 MW",
-         "风险等级": "高(红色)"}
+        {"时间": "07:30", "异常类型": "负荷突增", "实际/预测负荷": 3150.0, "偏离幅度": "+450 MW", "风险等级": "高(红色)"},
+        {"时间": "14:15", "异常类型": "持续偏高(趋势偏离)", "实际/预测负荷": 4850.0, "偏离幅度": "+12.5%", "风险等级": "中(橙色)"},
+        {"时间": "21:00", "异常类型": "负荷突降", "实际/预测负荷": 2800.0, "偏离幅度": "-380 MW", "风险等级": "高(红色)"}
     ]
     anomalies_df = pd.DataFrame(anomalies_data)
 
@@ -55,13 +112,9 @@ def get_model_outputs():
 
 
 # ==========================================
-# 2. 构建专业 Prompt (提示词工程)
+# 2. 构建专业 Prompt
 # ==========================================
 def build_analyst_prompt(stats, anomalies_df):
-    """
-    构建赋予大模型“资深电网调度分析师”角色的系统级Prompt
-    """
-    # 将异常DataFrame转为文本格式，方便大模型阅读
     anomalies_text = anomalies_df.to_string(index=False) if not anomalies_df.empty else "无异常状态，预测曲线平滑贴合历史规律。"
 
     prompt = f"""
@@ -104,25 +157,12 @@ def build_analyst_prompt(stats, anomalies_df):
 # 3. 网络预检查函数
 # ==========================================
 def check_network_connectivity(host="qianfan.baidubce.com", port=443, timeout=5):
-    """
-    检查网络是否可以连接到百度千帆服务器
-    
-    参数:
-        host: 目标主机名
-        port: 目标端口
-        timeout: 超时时间（秒）
-    
-    返回:
-        (bool, str): (是否可达, 详细信息)
-    """
     import socket
-    
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(timeout)
         result = sock.connect_ex((host, port))
         sock.close()
-        
         if result == 0:
             return True, f"✅ 网络连接正常，{host}:{port} 可达"
         else:
@@ -136,92 +176,156 @@ def check_network_connectivity(host="qianfan.baidubce.com", port=443, timeout=5)
 
 
 # ==========================================
-# 3. 调用百度千帆 (文心一言) 智能体
+# 4. 科大讯飞星火专用调用函数
 # ==========================================
-def call_qianfan_agent(prompt, debug_mode=None, max_retries=None, timeout=None):
+def call_xunfei_spark(prompt, app_id, api_key, api_secret, model="spark-4.0", timeout=30, debug_mode=True):
+    try:
+        import websocket
+        import base64
+        import hashlib
+        import hmac
+        import json
+        from datetime import datetime
+        from urllib.parse import urlencode
+
+        if not app_id or not api_key or not api_secret:
+            print("[WARNING] 科大讯飞 API 配置不完整")
+            return generate_mock_report()
+
+        url = "wss://spark-api.xf-yun.com/v4/chat/completions"
+        host = "spark-api.xf-yun.com"
+
+        date = datetime.now().strftime("%a, %d %b %Y %H:%M:%S GMT")
+        signature_origin = f"host: {host}\ndate: {date}\nGET /v4/chat/completions HTTP/1.1"
+        signature_sha = hmac.new(api_secret.encode('utf-8'), signature_origin.encode('utf-8'), digestmod=hashlib.sha256).digest()
+        signature = base64.b64encode(signature_sha).decode(encoding='utf-8')
+
+        authorization_origin = f'api_key="{api_key}", algorithm="hmac-sha256", headers="host date request-line", signature="{signature}"'
+        authorization = base64.b64encode(authorization_origin.encode('utf-8')).decode(encoding='utf-8')
+
+        params = {
+            "authorization": authorization,
+            "date": date,
+            "host": host
+        }
+
+        ws_url = f"{url}?{urlencode(params)}"
+
+        ws = websocket.create_connection(ws_url, timeout=timeout)
+
+        data = {
+            "header": {"app_id": app_id},
+            "parameter": {
+                "chat": {
+                    "domain": model,
+                    "temperature": 0.3,
+                    "top_p": 0.8
+                }
+            },
+            "payload": {
+                "message": {
+                    "text": [
+                        {"role": "system", "content": "你是一个严谨的电网调度分析师，严格遵循Markdown格式输出。"},
+                        {"role": "user", "content": prompt}
+                    ]
+                }
+            }
+        }
+
+        ws.send(json.dumps(data))
+
+        result = ""
+        while True:
+            response = ws.recv()
+            response_data = json.loads(response)
+            if response_data.get("header", {}).get("code") != 0:
+                error_msg = f"❌ 科大讯飞 API 错误: {response_data.get('header', {}).get('message', '未知错误')}"
+                print(error_msg)
+                ws.close()
+                return error_msg + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
+
+            choices = response_data.get("payload", {}).get("choices", {}).get("text", [])
+            for choice in choices:
+                if choice.get("content"):
+                    result += choice.get("content", "")
+
+            if response_data.get("payload", {}).get("choices", {}).get("status") == 2:
+                break
+
+        ws.close()
+        if debug_mode:
+            print(f"[INFO] 成功获取到报告内容，长度: {len(result)} 字符")
+        return result
+
+    except ImportError:
+        print("[WARNING] 未安装 websocket-client，无法调用科大讯飞星火模型")
+        return generate_mock_report()
+    except Exception as e:
+        print(f"❌ 科大讯飞调用错误: {str(e)}")
+        return generate_mock_report()
+
+
+# ==========================================
+# 5. 统一调用接口 - 支持多模型
+# ==========================================
+def call_ai_model(prompt, model_key=None, debug_mode=None, max_retries=None, timeout=None):
     debug_mode = debug_mode if debug_mode is not None else (os.getenv("LOG_LEVEL") == "DEBUG")
     max_retries = max_retries if max_retries is not None else int(os.getenv("MAX_RETRIES", "3"))
     timeout = timeout if timeout is not None else int(os.getenv("API_TIMEOUT", "30"))
-    """
-    通过 OpenAI 兼容接口调用百度千帆大模型 (ERNIE-4.0 或 ERNIE-3.5)
-    
-    参数:
-        prompt: 提示词内容
-        debug_mode: 是否开启调试模式，开启后会输出详细的调试信息
-        max_retries: 最大重试次数
-        timeout: 请求超时时间（秒）
-    
-    返回:
-        生成的报告内容，或错误信息
-    """
-    # ⚠️ 配置说明：
-    # 1. 登录百度千帆大模型平台 (https://qianfan.cloud.baidu.com/)
-    # 2. 获取您的 API Key (格式通常为 bce-v3/xxx 或直接的字符串)
-    # 3. 将下方 "your_qianfan_api_key" 替换为您的真实 Key，或设置环境变量 QIANFAN_API_KEY
-    
-    # 从环境变量读取配置
-    QIANFAN_BASE_URL = os.getenv("QIANFAN_BASE_URL", "https://qianfan.baidubce.com/v2")
-    QIANFAN_MODEL = os.getenv("QIANFAN_MODEL", "ernie-4.0-8k-latest")
-    
-    # 获取 API Key（优先从环境变量读取）
-    api_key = os.getenv("QIANFAN_API_KEY")
-    
-    # 调试信息：打印当前配置状态
+
+    if model_key is None:
+        model_key = os.getenv("DEFAULT_MODEL", "qianfan")
+
+    model_config = ModelManager.get_model_config(model_key)
+    if not model_config:
+        print(f"[WARNING] 未找到模型配置: {model_key}，使用默认模型")
+        model_key = "qianfan"
+        model_config = ModelManager.MODELS["qianfan"]
+
     if debug_mode:
-        print(f"\n[DEBUG] 开始调试千帆大模型调用...")
-        print(f"[DEBUG] API Key 来源: {'环境变量' if api_key else '默认值'}")
-        print(f"[DEBUG] API Key 长度: {len(api_key) if api_key else 0} 字符")
-        print(f"[DEBUG] Base URL: {QIANFAN_BASE_URL}")
-        print(f"[DEBUG] Model: {QIANFAN_MODEL}")
-        print(f"[DEBUG] Prompt 长度: {len(prompt)} 字符")
-        print(f"[DEBUG] 最大重试次数: {max_retries}")
-        print(f"[DEBUG] 请求超时时间: {timeout}秒")
-    
-    # 检查 API Key 是否配置
-    if not api_key or api_key.strip() == "" or api_key == "your_qianfan_api_key_here":
-        if not api_key or api_key.strip() == "":
-            print("[WARNING] 未配置百度千帆 API Key，将生成模拟简报")
-            print("[INFO] 请在 .env 文件中设置 QIANFAN_API_KEY 以使用真实大模型")
-        else:
-            print("[WARNING] 检测到占位符 API Key，将生成模拟简报")
-            print("[INFO] 请在 .env 文件中替换为真实的 API Key")
+        print(f"\n[DEBUG] 开始调用大模型: {model_config['name']}")
+        print(f"[DEBUG] 模型描述: {model_config['description']}")
+        print(f"[DEBUG] Base URL: {model_config['base_url']}")
+        print(f"[DEBUG] Model: {model_config['model']}")
+
+    api_key = os.getenv(model_config["api_key_env"])
+
+    if not api_key or api_key.strip() == "" or "your_" in api_key:
+        print(f"[WARNING] 未配置 {model_config['name']} API Key，将生成模拟简报")
+        print(f"[INFO] 请在 .env 文件中设置 {model_config['api_key_env']}")
         return generate_mock_report()
 
-    # 网络预检查
-    print("\n[INFO] 正在进行网络连接检查...")
-    network_ok, network_msg = check_network_connectivity("qianfan.baidubce.com", 443, 5)
+    if model_config.get("special") and model_key == "xunfei":
+        app_id = os.getenv(model_config.get("app_id_env"))
+        api_secret = os.getenv(model_config.get("api_secret_env"))
+        return call_xunfei_spark(prompt, app_id, api_key, api_secret, model_config["model"], timeout, debug_mode)
+
+    print(f"\n[INFO] 正在进行网络连接检查...")
+    network_ok, network_msg = check_network_connectivity(model_config["test_host"], 443, 5)
     print(f"[INFO] {network_msg}")
-    
+
     if not network_ok:
         error_msg = f"❌ 网络连接失败: {network_msg}"
-        error_detail = "\n\n详细原因分析:\n1. 当前网络环境无法访问百度千帆服务器\n2. 防火墙或代理设置可能阻止了请求\n3. 请检查网络连接和防火墙设置\n4. 在浏览器中访问 https://qianfan.cloud.baidu.com/ 确认网络可达"
         print(error_msg)
-        print(error_detail)
-        return error_msg + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
+        return error_msg + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
 
-    # 初始化 OpenAI 客户端，指向百度千帆的 Base URL
     client = OpenAI(
         api_key=api_key,
-        base_url=QIANFAN_BASE_URL,
+        base_url=model_config["base_url"],
         timeout=timeout
     )
-    
+
     if debug_mode:
         print(f"[DEBUG] OpenAI 客户端初始化成功")
-        print(f"[DEBUG] 客户端配置: api_key已设置, base_url={client.base_url}, timeout={timeout}秒")
-    
-    # 重试循环
+
     last_error = None
     for attempt in range(max_retries):
         try:
-            print(f"\n[INFO] 正在调用千帆大模型智能体 (第 {attempt + 1}/{max_retries} 次尝试)...")
-            
-            # 调用大模型
-            print(f"[INFO] 请求模型: {QIANFAN_MODEL}")
-            print(f"[INFO] 请求参数: temperature=0.3, top_p=0.8")
-            
+            print(f"\n[INFO] 正在调用 {model_config['name']} 大模型 (第 {attempt + 1}/{max_retries} 次尝试)...")
+            print(f"[INFO] 请求模型: {model_config['model']}")
+
             response = client.chat.completions.create(
-                model=QIANFAN_MODEL,
+                model=model_config["model"],
                 messages=[
                     {"role": "system", "content": "你是一个严谨的电网调度分析师，严格遵循Markdown格式输出。"},
                     {"role": "user", "content": prompt}
@@ -229,92 +333,78 @@ def call_qianfan_agent(prompt, debug_mode=None, max_retries=None, timeout=None):
                 temperature=0.3,
                 top_p=0.8
             )
-            
-            if debug_mode:
-                print(f"[DEBUG] API 响应成功")
-                print(f"[DEBUG] 响应对象类型: {type(response)}")
-                print(f"[DEBUG] 响应 ID: {response.id if hasattr(response, 'id') else 'N/A'}")
-            
-            # 提取响应内容
+
             if hasattr(response, 'choices') and len(response.choices) > 0:
                 message = response.choices[0].message
                 if hasattr(message, 'content') and message.content:
                     print(f"[INFO] 成功获取到报告内容，长度: {len(message.content)} 字符")
                     return message.content
                 else:
-                    error_msg = f"❌ API 响应内容为空: message.content = {message.content}"
+                    error_msg = f"❌ API 响应内容为空"
                     print(error_msg)
                     last_error = error_msg
             else:
-                error_msg = f"❌ API 响应中没有 choices 字段或 choices 为空"
+                error_msg = f"❌ API 响应中没有 choices 字段"
                 print(error_msg)
                 last_error = error_msg
-        
+
         except AuthenticationError as e:
-            error_msg = f"❌ 认证错误 (AuthenticationError): {str(e)}"
-            error_detail = "\n详细原因分析:\n1. API Key 可能不正确或已过期\n2. API Key 格式可能有误（应为 bce-v3/xxx 格式）\n3. 账号可能未开通千帆 API 服务\n4. 请检查百度千帆控制台中的 API Key 配置"
+            error_msg = f"❌ 认证错误: {str(e)}"
             print(error_msg)
-            print(error_detail)
-            return error_msg + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
-        
+            return error_msg + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
+
         except APIConnectionError as e:
-            error_msg = f"❌ 连接错误 (APIConnectionError): {str(e)}"
+            error_msg = f"❌ 连接错误: {str(e)}"
             print(f"[WARNING] 第 {attempt + 1} 次尝试失败: {error_msg}")
             last_error = e
             if attempt < max_retries - 1:
                 wait_time = (attempt + 1) * 2
                 print(f"[INFO] {wait_time}秒后进行第 {attempt + 2} 次重试...")
                 time.sleep(wait_time)
-        
+
         except RateLimitError as e:
-            error_msg = f"❌ 限流错误 (RateLimitError): {str(e)}"
-            error_detail = "\n详细原因分析:\n1. API 请求频率超过了限制\n2. 账号配额已用完\n3. 请稍后重试或联系百度千帆客服增加配额"
+            error_msg = f"❌ 限流错误: {str(e)}"
             print(error_msg)
-            print(error_detail)
-            return error_msg + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
-        
+            return error_msg + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
+
         except APIError as e:
-            error_msg = f"❌ API 错误 (APIError): {str(e)}"
-            
-            if 'account_overdue' in str(e):
-                error_detail = "\n详细原因分析:\n⚠️ 【重要】百度千帆账户欠费！\n1. 当前使用的API Key对应的百度千帆账户已欠费\n2. 请登录百度千帆控制台 (https://qianfan.cloud.baidu.com/) 检查账户余额\n3. 充值后即可恢复服务\n4. 如需更换API Key，请设置环境变量 QIANFAN_API_KEY"
-                print(error_msg)
-                print(error_detail)
-                return error_msg + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
-            else:
-                print(f"[WARNING] 第 {attempt + 1} 次尝试失败: {error_msg}")
-                last_error = e
-                if attempt < max_retries - 1:
-                    wait_time = (attempt + 1) * 2
-                    print(f"[INFO] {wait_time}秒后进行第 {attempt + 2} 次重试...")
-                    time.sleep(wait_time)
-        
+            error_msg = f"❌ API 错误: {str(e)}"
+            print(f"[WARNING] 第 {attempt + 1} 次尝试失败: {error_msg}")
+            last_error = e
+            if attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 2
+                print(f"[INFO] {wait_time}秒后进行第 {attempt + 2} 次重试...")
+                time.sleep(wait_time)
+
         except Exception as e:
             error_msg = f"❌ 未知错误: {str(e)}"
             print(f"[WARNING] 第 {attempt + 1} 次尝试失败: {error_msg}")
             if debug_mode:
-                print("[DEBUG] 完整错误堆栈:")
                 traceback.print_exc()
             last_error = e
             if attempt < max_retries - 1:
                 wait_time = (attempt + 1) * 2
                 print(f"[INFO] {wait_time}秒后进行第 {attempt + 2} 次重试...")
                 time.sleep(wait_time)
-    
-    # 所有重试都失败了
-    error_summary = f"❌ 所有 {max_retries} 次请求均失败，无法连接到百度千帆大模型服务。"
+
+    error_summary = f"❌ 所有 {max_retries} 次请求均失败"
     if last_error:
         error_summary += f"\n最后一次错误: {str(last_error)}"
-    
-    error_detail = "\n\n详细原因分析:\n1. 网络连接问题，无法连接到百度千帆服务器\n2. 防火墙或代理设置可能阻止了请求\n3. 请检查网络连接和防火墙设置\n4. 尝试访问 https://qianfan.cloud.baidu.com/ 确认网络可达\n5. 请确认百度千帆账号余额充足且API Key有效"
-    
     print(error_summary)
-    print(error_detail)
-    return error_summary + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
+    return error_summary + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
 
 
+# ==========================================
+# 6. 兼容旧接口
+# ==========================================
+def call_qianfan_agent(prompt, debug_mode=None, max_retries=None, timeout=None):
+    return call_ai_model(prompt, "qianfan", debug_mode, max_retries, timeout)
+
+
+# ==========================================
+# 7. 模拟报告生成
+# ==========================================
 def generate_mock_report():
-    """当没有API Key时，提供一个高质量的模板示例"""
     return """## 📊 一、 关键结论
 1. **整体负荷偏高**：明日受强冷空气南下影响，取暖负荷激增，预计最大负荷达 5240.5 MW，峰谷差高达 3620.2 MW，系统调峰压力极大。
 2. **峰值时段集中**：晚高峰 18:45-19:15 为全网保供最严峻时段，与光伏出力骤降期重叠（“鸭子曲线”颈部），需高度警惕。
@@ -333,29 +423,28 @@ def generate_mock_report():
 
 
 # ==========================================
-# 4. 主程序执行
+# 8. 主程序执行
 # ==========================================
 if __name__ == "__main__":
     print("=" * 50)
     print("⚡ 区域电网负荷预测与运行风险智能分析系统 ⚡")
     print("=" * 50)
 
-    # 1. 获取前置模型结果
-    stats, anomalies = get_model_outputs()
+    print("\n[可用模型列表]")
+    for key, config in ModelManager.get_available_models().items():
+        print(f"  - {key}: {config['name']} ({config['description']})")
 
-    # 2. 构建 Prompt
+    stats, anomalies = get_model_outputs()
     prompt = build_analyst_prompt(stats, anomalies)
 
-    # 3. 调用大模型生成简报
-    report = call_qianfan_agent(prompt)
+    print("\n[测试调用默认模型]")
+    report = call_ai_model(prompt)
 
-    # 4. 输出结果
     print("\n" + "=" * 50)
     print("📝 【生成简报如下】")
     print("=" * 50)
     print(report)
 
-    # 可选：将简报保存为 Markdown 文件
     with open("forecast_report.md", "w", encoding="utf-8") as f:
         f.write(report)
     print("\n✅ 简报已保存至 forecast_report.md")
