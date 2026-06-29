@@ -10,6 +10,13 @@ from datetime import datetime, timedelta
 sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("[INFO] 成功加载 .env 配置文件")
+except ImportError:
+    print("[INFO] 未安装 python-dotenv，将从环境变量读取配置")
+
 
 # ==========================================
 # 1. 模拟前置 PyTorch 模型的输出结果
@@ -131,7 +138,10 @@ def check_network_connectivity(host="qianfan.baidubce.com", port=443, timeout=5)
 # ==========================================
 # 3. 调用百度千帆 (文心一言) 智能体
 # ==========================================
-def call_qianfan_agent(prompt, debug_mode=True, max_retries=3, timeout=30):
+def call_qianfan_agent(prompt, debug_mode=None, max_retries=None, timeout=None):
+    debug_mode = debug_mode if debug_mode is not None else (os.getenv("LOG_LEVEL") == "DEBUG")
+    max_retries = max_retries if max_retries is not None else int(os.getenv("MAX_RETRIES", "3"))
+    timeout = timeout if timeout is not None else int(os.getenv("API_TIMEOUT", "30"))
     """
     通过 OpenAI 兼容接口调用百度千帆大模型 (ERNIE-4.0 或 ERNIE-3.5)
     
@@ -149,11 +159,11 @@ def call_qianfan_agent(prompt, debug_mode=True, max_retries=3, timeout=30):
     # 2. 获取您的 API Key (格式通常为 bce-v3/xxx 或直接的字符串)
     # 3. 将下方 "your_qianfan_api_key" 替换为您的真实 Key，或设置环境变量 QIANFAN_API_KEY
     
-    # 百度千帆 OpenAI 兼容接口配置
-    QIANFAN_BASE_URL = "https://qianfan.baidubce.com/v2"
-    QIANFAN_MODEL = "ernie-4.0-8k-latest"
+    # 从环境变量读取配置
+    QIANFAN_BASE_URL = os.getenv("QIANFAN_BASE_URL", "https://qianfan.baidubce.com/v2")
+    QIANFAN_MODEL = os.getenv("QIANFAN_MODEL", "ernie-4.0-8k-latest")
     
-    # 获取 API Key（优先从环境变量读取，其次使用默认值）
+    # 获取 API Key（优先从环境变量读取）
     api_key = os.getenv("QIANFAN_API_KEY")
     
     # 调试信息：打印当前配置状态
@@ -167,15 +177,15 @@ def call_qianfan_agent(prompt, debug_mode=True, max_retries=3, timeout=30):
         print(f"[DEBUG] 最大重试次数: {max_retries}")
         print(f"[DEBUG] 请求超时时间: {timeout}秒")
     
-    # 如果没有配置 API Key，使用默认的演示 Key
-    if not api_key:
-        print("[DEBUG] 未从环境变量获取到 QIANFAN_API_KEY，使用代码中的默认 Key")
-        api_key = "API-KEYAPI-KEY"
-    
-    # 检查是否为占位符 Key
-    if api_key == "your_qianfan_api_key_here":
-        error_msg = "⚠️ [系统提示] 检测到未配置百度千帆 API Key。请设置环境变量 QIANFAN_API_KEY 或在代码中填入您的 Key 以生成真实简报。\n\n以下为基于规则生成的【模拟简报】：\n"
-        return error_msg + generate_mock_report()
+    # 检查 API Key 是否配置
+    if not api_key or api_key.strip() == "" or api_key == "your_qianfan_api_key_here":
+        if not api_key or api_key.strip() == "":
+            print("[WARNING] 未配置百度千帆 API Key，将生成模拟简报")
+            print("[INFO] 请在 .env 文件中设置 QIANFAN_API_KEY 以使用真实大模型")
+        else:
+            print("[WARNING] 检测到占位符 API Key，将生成模拟简报")
+            print("[INFO] 请在 .env 文件中替换为真实的 API Key")
+        return generate_mock_report()
 
     # 网络预检查
     print("\n[INFO] 正在进行网络连接检查...")

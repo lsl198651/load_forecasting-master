@@ -8,8 +8,12 @@ import base64
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# 设置API密钥
-os.environ["QIANFAN_API_KEY"] = ""
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("[INFO] 已加载 .env 配置文件")
+except ImportError:
+    print("[INFO] 未安装 python-dotenv，将从环境变量读取配置")
 
 print('=' * 60)
 print('⚡ 完整用户操作流程模拟 - 电力负荷预测与智能分析系统')

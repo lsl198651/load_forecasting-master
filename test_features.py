@@ -4,7 +4,13 @@ import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-os.environ["QIANFAN_API_KEY"] = ""
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("[INFO] 已加载 .env 配置文件")
+except ImportError:
+    print("[INFO] 未安装 python-dotenv，将从环境变量读取配置")
 
 import importlib.util
 spec = importlib.util.spec_from_file_location('myModel_lstm', os.path.join(os.path.dirname(__file__), 'myModel.lstm.py'))

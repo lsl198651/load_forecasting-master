@@ -90,8 +90,10 @@ celerybeat-schedule
 # SageMath parsed files
 *.sage.py
 
-# dotenv
+# dotenv - 环境变量配置文件（包含敏感信息）
 .env
+.env.local
+.env.*.local
 
 # virtualenv
 .venv

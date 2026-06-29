@@ -15,6 +15,14 @@ from .models import CSV
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
+# 加载环境变量配置
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(project_root, '.env'))
+    print("[INFO] 服务器已加载 .env 配置文件")
+except ImportError:
+    print("[INFO] 未安装 python-dotenv，将从环境变量读取配置")
+
 # 动态导入 myModel.lstm 模块
 import importlib.util
 lstm_file = os.path.join(project_root, 'myModel.lstm.py')
@@ -45,16 +53,8 @@ def get_forecaster():
 
 
 def home_page(request):
-    """主页"""
-    print("date:", datetime.date.today().day)
-    day = datetime.date.today().day
-    month = datetime.date.today().month
-    year = datetime.date.today().year
-    return render(request, "Home_page.html", {
-        'Day': str(day).zfill(2),
-        'Month': str(month).zfill(2),
-        'Year': year
-    })
+    """欢迎页 - 展示系统介绍并引导用户进入预测仪表板"""
+    return render(request, "Home_page.html")
 
 
 def load_forecasting_dashboard(request):
