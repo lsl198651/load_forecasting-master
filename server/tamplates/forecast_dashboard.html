@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电力负荷预测与智能分析系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --bg-dark: #1a1a2e;
+            --bg-card: rgba(255, 255, 255, 0.95);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        }
+
+        .main-container {
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px 40px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .header h1 {
+            color: white;
+            font-weight: 700;
+            font-size: 28px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header .subtitle {
+            color: rgba(255, 255, 255, 0.85);
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 25px;
+            border: none;
+            font-weight: 600;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 14px;
+            padding: 22px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card .stat-icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card .stat-value {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 13px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .stat-card.max { border-left-color: #f5576c; }
+        .stat-card.min { border-left-color: #4facfe; }
+        .stat-card.avg { border-left-color: #11998e; }
+        .stat-card.anomaly { border-left-color: #f093fb; }
+
+        .btn {
+            border-radius: 10px;
+            padding: 10px 22px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(240, 147, 251, 0.5);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+            color: white;
+        }
+
+        .btn-info:hover {
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline-primary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-outline-primary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-group-custom {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .form-select, .form-control {
+            border-radius: 10px;
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus, .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading-spinner.active {
+            display: block;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #667eea;
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .anomaly-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-danger {
+            background: #ffe0e0;
+            color: #d32f2f;
+        }
+
+        .badge-warning {
+            background: #fff4e6;
+            color: #f57c00;
+        }
+
+        .badge-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .report-content {
+            background: #fafafa;
+            padding: 25px;
+            border-radius: 12px;
+            line-height: 1.8;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .report-content h1, .report-content h2, .report-content h3 {
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .report-content table {
+            width: 100%;
+            margin: 15px 0;
+            border-collapse: collapse;
+        }
+
+        .report-content th, .report-content td {
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            text-align: left;
+        }
+
+        .report-content th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+
+        .model-item {
+            padding: 12px 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .model-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .model-item.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .model-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .model-name {
+            font-weight: 600;
+            color: #1a1a2e;
+            font-size: 14px;
+        }
+
+        .model-meta {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 3px;
+        }
+
+        .model-tag {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #adb5bd;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .anomaly-table {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .table thead th {
+            background: #f8f9ff;
+            border-bottom: 2px solid #667eea;
+            color: #495057;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+
+        .control-group-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-badge.ready {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-badge.running {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header">
+            <h1>
+                <i class="fas fa-bolt"></i>
+                电力负荷预测与智能分析系统
+            </h1>
+            <div class="subtitle">
+                <i class="fas fa-microchip"></i> 基于PyTorch深度学习 · LSTM神经网络 · 百度千帆AI大模型分析
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-3">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-cogs"></i>
+                        预测控制面板
+                    </div>
+                    <div class="card-body">
+                        <div class="control-panel" style="grid-template-columns: 1fr;">
+                            <div class="control-group">
+                                <div class="control-group-title">
+                                    <i class="fas fa-clock"></i>
+                                    预测时长
+                                </div>
+                                <select class="form-select" id="forecastHours">
+                                    <option value="24">未来24小时</option>
+                                    <option value="72">未来72小时</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group">
+                                <div class="control-group-title">
+                                    <i class="fas fa-cube"></i>
+                                    模型选择
+                                </div>
+                                <select class="form-select" id="modelMode">
+                                    <option value="new">训练新模型</option>
+                                    <option value="saved">使用已保存模型</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group" id="savedModelsGroup" style="display: none;">
+                                <div class="control-group-title">
+                                    <i class="fas fa-history"></i>
+                                    已保存模型
+                                </div>
+                                <div id="savedModelsList" style="max-height: 200px; overflow-y: auto;">
+                                    <div class="empty-state">
+                                        <i class="fas fa-folder-open"></i>
+                                        <div>暂无保存的模型</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="control-group" id="epochsGroup">
+                                <div class="control-group-title">
+                                    <i class="fas fa-sync"></i>
+                                    训练轮数
+                                </div>
+                                <select class="form-select" id="epochs">
+                                    <option value="5">快速 (5轮)</option>
+                                    <option value="10">标准 (10轮)</option>
+                                    <option value="20" selected>完整 (20轮)</option>
+                                    <option value="30">深度 (30轮)</option>
+                                </select>
+                            </div>
+
+                            <div class="control-group">
+                                <div class="control-group-title">
+                                    <i class="fas fa-save"></i>
+                                    保存模型
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="saveModel" checked>
+                                    <label class="form-check-label" for="saveModel">
+                                        训练完成后自动保存
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div id="statusBadge" class="status-badge ready">
+                                <i class="fas fa-check-circle"></i>
+                                系统就绪
+                            </div>
+                        </div>
+
+                        <div class="btn-group-custom">
+                            <button class="btn btn-primary w-100" id="startBtn" onclick="startPrediction()">
+                                <i class="fas fa-play"></i>
+                                启动预测流程
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line"></i>
+                        负荷预测概览
+                        <span style="margin-left: auto; font-size: 14px; font-weight: 400; opacity: 0.9;" id="forecastRangeLabel">
+                            未来24小时
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3 col-6">
+                                <div class="stat-card max">
+                                    <div class="stat-icon"><i class="fas fa-arrow-up"></i></div>
+                                    <div class="stat-value" id="maxLoad">--</div>
+                                    <div class="stat-label">最大负荷 (MW)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="stat-card min">
+                                    <div class="stat-icon"><i class="fas fa-arrow-down"></i></div>
+                                    <div class="stat-value" id="minLoad">--</div>
+                                    <div class="stat-label">最小负荷 (MW)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="stat-card avg">
+                                    <div class="stat-icon"><i class="fas fa-gauge-high"></i></div>
+                                    <div class="stat-value" id="avgLoad">--</div>
+                                    <div class="stat-label">平均负荷 (MW)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="stat-card anomaly">
+                                    <div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div>
+                                    <div class="stat-value" id="anomalyCount">--</div>
+                                    <div class="stat-label">异常数量</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="forecastChart"></canvas>
+                        </div>
+
+                        <div class="loading-spinner" id="chartLoading">
+                            <div class="spinner-border" role="status"></div>
+                            <div class="loading-text">正在加载预测数据...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-circle-info"></i>
+                        预测详情
+                        <span style="margin-left: auto; font-size: 13px; font-weight: 400; opacity: 0.9;" id="modelInfo">
+                            模型: 尚未训练
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>指标</th>
+                                        <th>数值</th>
+                                        <th>指标</th>
+                                        <th>数值</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statsTableBody">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: #adb5bd; padding: 30px;">
+                                            请先启动预测流程
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-triangle-exclamation"></i>
+                        异常识别结果
+                        <span style="margin-left: auto; font-size: 13px; font-weight: 400; opacity: 0.9;" id="anomalyBadge">
+                            共 0 个异常
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="anomaly-table">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>时间</th>
+                                        <th>异常类型</th>
+                                        <th>实际负荷 (MW)</th>
+                                        <th>预测负荷 (MW)</th>
+                                        <th>偏离幅度</th>
+                                        <th>风险等级</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="anomalyTableBody">
+                                    <tr>
+                                        <td colspan="6" style="text-align: center; color: #adb5bd; padding: 30px;">
+                                            暂无异常数据
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        AI智能分析简报
+                        <div style="margin-left: auto; display: flex; gap: 10px;">
+                            <button class="btn btn-warning btn-sm" onclick="generateReport()">
+                                <i class="fas fa-wand-magic-sparkles"></i>
+                                生成简报
+                            </button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-download"></i>
+                                    导出报告
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="exportReport('md')"><i class="fab fa-markdown"></i> Markdown 格式</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="exportReport('html')"><i class="fab fa-html5"></i> HTML 格式</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="exportReport('txt')"><i class="fas fa-file-alt"></i> 纯文本格式</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="loading-spinner" id="reportLoading">
+                            <div class="spinner-border" role="status"></div>
+                            <div class="loading-text">正在调用百度千帆大模型生成分析简报...</div>
+                        </div>
+                        <div class="report-content" id="reportContent" style="display: none;">
+                        </div>
+                        <div id="reportEmpty" class="empty-state">
+                            <i class="fas fa-robot"></i>
+                            <div>点击"生成简报"按钮，AI将为您智能分析预测结果</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let forecastChart = null;
+        let predictionResults = null;
+        let selectedModel = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedModels();
+            initChart();
+        });
+
+        document.getElementById('modelMode').addEventListener('change', function() {
+            const savedGroup = document.getElementById('savedModelsGroup');
+            const epochsGroup = document.getElementById('epochsGroup');
+            if (this.value === 'saved') {
+                savedGroup.style.display = 'block';
+                epochsGroup.style.display = 'none';
+                loadSavedModels();
+            } else {
+                savedGroup.style.display = 'none';
+                epochsGroup.style.display = 'block';
+            }
+        });
+
+        function initChart() {
+            const ctx = document.getElementById('forecastChart').getContext('2d');
+            forecastChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: '实际负荷',
+                            data: [],
+                            borderColor: '#1976d2',
+                            backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.4,
+                            fill: false,
+                            pointRadius: 0
+                        },
+                        {
+                            label: '预测负荷',
+                            data: [],
+                            borderColor: '#f44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.4,
+                            fill: false,
+                            pointRadius: 0,
+                            borderDash: [8, 4]
+                        },
+                        {
+                            label: '95%置信区间上限',
+                            data: [],
+                            borderColor: 'rgba(144, 202, 249, 0.5)',
+                            backgroundColor: 'rgba(144, 202, 249, 0.2)',
+                            borderWidth: 1,
+                            tension: 0.4,
+                            fill: '+1',
+                            pointRadius: 0
+                        },
+                        {
+                            label: '95%置信区间下限',
+                            data: [],
+                            borderColor: 'rgba(144, 202, 249, 0.5)',
+                            backgroundColor: 'transparent',
+                            borderWidth: 1,
+                            tension: 0.4,
+                            fill: false,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { size: 12, weight: '500' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(26, 26, 46, 0.95)',
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            ticks: {
+                                maxTicksLimit: 12,
+                                font: { size: 11 }
+                            }
+                        },
+                        y: {
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            ticks: { font: { size: 11 } },
+                            title: {
+                                display: true,
+                                text: '电力负荷 (MW)',
+                                font: { size: 12, weight: '600' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadSavedModels() {
+            fetch('/api/get_saved_models/')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const listEl = document.getElementById('savedModelsList');
+                        if (data.models.length === 0) {
+                            listEl.innerHTML = `
+                                <div class="empty-state">
+                                    <i class="fas fa-folder-open"></i>
+                                    <div>暂无保存的模型</div>
+                                </div>
+                            `;
+                            return;
+                        }
+                        listEl.innerHTML = data.models.map((m, idx) => `
+                            <div class="model-item ${idx === 0 ? 'active' : ''}" onclick="selectModel('${m.name}', this)">
+                                <div class="model-info">
+                                    <div class="model-name">${m.name}</div>
+                                    <div class="model-meta">
+                                        ${m.created_at} · ${m.forecast_hours}小时 · ${m.epochs}轮
+                                    </div>
+                                </div>
+                                <span class="model-tag" style="background: #e8f5e9; color: #2e7d32;">
+                                    ${m.forecast_hours}h
+                                </span>
+                            </div>
+                        `).join('');
+                        if (data.models.length > 0) {
+                            selectedModel = data.models[0].name;
+                        }
+                    }
+                })
+                .catch(err => console.error('加载模型列表失败:', err));
+        }
+
+        function selectModel(name, el) {
+            selectedModel = name;
+            document.querySelectorAll('.model-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function startPrediction() {
+            const btn = document.getElementById('startBtn');
+            const statusBadge = document.getElementById('statusBadge');
+            const chartLoading = document.getElementById('chartLoading');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 预测进行中...';
+            statusBadge.className = 'status-badge running';
+            statusBadge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在运行...';
+            chartLoading.classList.add('active');
+
+            const forecastHours = parseInt(document.getElementById('forecastHours').value);
+            const modelMode = document.getElementById('modelMode').value;
+            const epochs = parseInt(document.getElementById('epochs').value);
+            const saveModel = document.getElementById('saveModel').checked;
+
+            const body = {
+                forecast_hours: forecastHours,
+                epochs: epochs,
+                save_model: saveModel
+            };
+
+            if (modelMode === 'saved' && selectedModel) {
+                body.use_saved_model = selectedModel;
+            }
+
+            fetch('/api/run_prediction/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    fetchPredictionResults();
+                    document.getElementById('forecastRangeLabel').textContent = `未来${forecastHours}小时`;
+                    if (data.model_name) {
+                        document.getElementById('modelInfo').textContent = `模型: ${data.model_name}`;
+                    }
+                    loadSavedModels();
+                } else {
+                    alert('预测失败: ' + data.message);
+                    resetButton();
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('预测出错: ' + err.message);
+                resetButton();
+            });
+        }
+
+        function resetButton() {
+            const btn = document.getElementById('startBtn');
+            const statusBadge = document.getElementById('statusBadge');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play"></i> 启动预测流程';
+            statusBadge.className = 'status-badge ready';
+            statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> 系统就绪';
+            document.getElementById('chartLoading').classList.remove('active');
+        }
+
+        function fetchPredictionResults() {
+            fetch('/api/get_prediction_results/')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        predictionResults = data;
+                        updateUI(data);
+                    }
+                    resetButton();
+                    document.getElementById('chartLoading').classList.remove('active');
+                })
+                .catch(err => {
+                    console.error(err);
+                    resetButton();
+                    document.getElementById('chartLoading').classList.remove('active');
+                });
+        }
+
+        function updateUI(data) {
+            const stats = data.stats;
+
+            document.getElementById('maxLoad').textContent = stats['预测最大负荷(MW)'];
+            document.getElementById('minLoad').textContent = stats['预测最小负荷(MW)'];
+            document.getElementById('avgLoad').textContent = stats['平均负荷(MW)'];
+            document.getElementById('anomalyCount').textContent = data.anomalies.length;
+
+            const tbody = document.getElementById('statsTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td><strong>预测日期</strong></td>
+                    <td>${stats['预测日期']}</td>
+                    <td><strong>预测时长</strong></td>
+                    <td>${stats['预测时长']}</td>
+                </tr>
+                <tr>
+                    <td><strong>预测最大负荷</strong></td>
+                    <td style="color: #f5576c; font-weight: 600;">${stats['预测最大负荷(MW)']} MW</td>
+                    <td><strong>预计峰值出现时间</strong></td>
+                    <td>${stats['预计峰值出现时间']}</td>
+                </tr>
+                <tr>
+                    <td><strong>预测最小负荷</strong></td>
+                    <td style="color: #4facfe; font-weight: 600;">${stats['预测最小负荷(MW)']} MW</td>
+                    <td><strong>预计谷值出现时间</strong></td>
+                    <td>${stats['预计谷值出现时间']}</td>
+                </tr>
+                <tr>
+                    <td><strong>平均负荷</strong></td>
+                    <td style="color: #11998e; font-weight: 600;">${stats['平均负荷(MW)']} MW</td>
+                    <td><strong>峰谷差</strong></td>
+                    <td>${stats['峰谷差(MW)']} MW</td>
+                </tr>
+                <tr>
+                    <td><strong>时间粒度</strong></td>
+                    <td>${stats['预测时间粒度']}</td>
+                    <td><strong>置信区间宽度</strong></td>
+                    <td>${stats['95%置信区间最大宽度(MW)']} MW</td>
+                </tr>
+            `;
+
+            const labels = data.prediction_data.timestamps.map(t => t.split(' ')[1] || t);
+            const actualData = data.prediction_data.actual_values;
+            const predData = data.prediction_data.predicted_values;
+            const upperData = data.prediction_data.confidence_upper;
+            const lowerData = data.prediction_data.confidence_lower;
+
+            const step = Math.max(1, Math.floor(labels.length / 12));
+            const displayLabels = labels.map((l, i) => i % step === 0 ? l : '');
+
+            forecastChart.data.labels = displayLabels;
+            forecastChart.data.datasets[0].data = actualData;
+            forecastChart.data.datasets[1].data = predData;
+            forecastChart.data.datasets[2].data = upperData;
+            forecastChart.data.datasets[3].data = lowerData;
+            forecastChart.update();
+
+            const anomalyTbody = document.getElementById('anomalyTableBody');
+            document.getElementById('anomalyBadge').textContent = `共 ${data.anomalies.length} 个异常`;
+
+            if (data.anomalies.length === 0) {
+                anomalyTbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #4caf50; padding: 30px;">
+                            <i class="fas fa-check-circle"></i> 未检测到异常状态
+                        </td>
+                    </tr>
+                `;
+            } else {
+                anomalyTbody.innerHTML = data.anomalies.map(a => {
+                    const badgeClass = a['风险等级'].includes('高') ? 'badge-danger' : a['风险等级'].includes('中') ? 'badge-warning' : 'badge-info';
+                    return `
+                        <tr>
+                            <td>${a['时间']}</td>
+                            <td>${a['异常类型']}</td>
+                            <td>${a['实际负荷']}</td>
+                            <td>${a['预测负荷']}</td>
+                            <td style="font-weight: 600; color: ${a['偏离幅度'].includes('+') ? '#f44336' : '#4caf50'}">
+                                ${a['偏离幅度']}
+                            </td>
+                            <td><span class="anomaly-badge ${badgeClass}">${a['风险等级']}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        function generateReport() {
+            if (!predictionResults) {
+                alert('请先运行预测流程');
+                return;
+            }
+
+            document.getElementById('reportLoading').classList.add('active');
+            document.getElementById('reportContent').style.display = 'none';
+            document.getElementById('reportEmpty').style.display = 'none';
+
+            fetch('/api/generate_report/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('reportLoading').classList.remove('active');
+                if (data.status === 'success') {
+                    document.getElementById('reportContent').style.display = 'block';
+                    document.getElementById('reportContent').innerHTML = marked.parse(data.report);
+                } else {
+                    alert('生成简报失败: ' + data.message);
+                    document.getElementById('reportEmpty').style.display = 'block';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('reportLoading').classList.remove('active');
+                document.getElementById('reportEmpty').style.display = 'block';
+                alert('生成简报出错: ' + err.message);
+            });
+        }
+
+        function exportReport(format) {
+            if (!predictionResults) {
+                alert('请先运行预测流程');
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/api/export_report/';
+            form.style.display = 'none';
+
+            const formatInput = document.createElement('input');
+            formatInput.type = 'hidden';
+            formatInput.name = 'format';
+            formatInput.value = format;
+            form.appendChild(formatInput);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+    </script>
+</body>
+</html>

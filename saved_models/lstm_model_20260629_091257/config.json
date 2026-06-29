@@ -1,0 +1,76 @@
+{
+  "features_cols": [
+    "Power demand",
+    "temp",
+    "dwpt",
+    "rhum",
+    "wspd",
+    "pres",
+    "hour_sin",
+    "hour_cos",
+    "dow_sin",
+    "dow_cos"
+  ],
+  "LOOK_BACK": 576,
+  "FORECAST_HORIZON": 288,
+  "TARGET_IDX": 0,
+  "input_size": 10,
+  "hidden_size": 64,
+  "num_layers": 3,
+  "output_size": 288,
+  "created_at": "2026-06-29 09:12:57",
+  "training_history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.14330826212059367,
+      "val_loss": 0.12690138071775436
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.08334441394968466,
+      "val_loss": 0.10193200223147869
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.05413300713354891,
+      "val_loss": 0.06823698431253433
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.032873930138620465,
+      "val_loss": 0.06447157450020313
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.02352699725465341,
+      "val_loss": 0.0614009415730834
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.017928123761984435,
+      "val_loss": 0.0721968524158001
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.014314193989742886,
+      "val_loss": 0.05913123395293951
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.01215579482642087,
+      "val_loss": 0.0593919288367033
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.010831593908369542,
+      "val_loss": 0.06298110261559486
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.010134861855344339,
+      "val_loss": 0.06429282296448946
+    }
+  ],
+  "model_name": "lstm_model_20260629_091257",
+  "forecast_hours": 24
+}

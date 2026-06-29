@@ -1,8 +1,14 @@
 import json
 import os
+import sys
+import time
+import traceback
 import pandas as pd
-from openai import OpenAI
+from openai import OpenAI, APIConnectionError, APIError, AuthenticationError, RateLimitError
 from datetime import datetime, timedelta
+
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
 
 
 # ==========================================
@@ -88,42 +94,213 @@ def build_analyst_prompt(stats, anomalies_df):
 
 
 # ==========================================
+# 3. 网络预检查函数
+# ==========================================
+def check_network_connectivity(host="qianfan.baidubce.com", port=443, timeout=5):
+    """
+    检查网络是否可以连接到百度千帆服务器
+    
+    参数:
+        host: 目标主机名
+        port: 目标端口
+        timeout: 超时时间（秒）
+    
+    返回:
+        (bool, str): (是否可达, 详细信息)
+    """
+    import socket
+    
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        
+        if result == 0:
+            return True, f"✅ 网络连接正常，{host}:{port} 可达"
+        else:
+            return False, f"❌ 网络连接失败，{host}:{port} 不可达 (错误码: {result})"
+    except socket.gaierror:
+        return False, f"❌ DNS解析失败，无法解析主机名 {host}"
+    except socket.timeout:
+        return False, f"❌ 连接超时，{host}:{port} 响应时间超过 {timeout} 秒"
+    except Exception as e:
+        return False, f"❌ 网络检查失败: {str(e)}"
+
+
+# ==========================================
 # 3. 调用百度千帆 (文心一言) 智能体
 # ==========================================
-def call_qianfan_agent(prompt):
+def call_qianfan_agent(prompt, debug_mode=True, max_retries=3, timeout=30):
     """
     通过 OpenAI 兼容接口调用百度千帆大模型 (ERNIE-4.0 或 ERNIE-3.5)
+    
+    参数:
+        prompt: 提示词内容
+        debug_mode: 是否开启调试模式，开启后会输出详细的调试信息
+        max_retries: 最大重试次数
+        timeout: 请求超时时间（秒）
+    
+    返回:
+        生成的报告内容，或错误信息
     """
     # ⚠️ 配置说明：
     # 1. 登录百度千帆大模型平台 (https://qianfan.cloud.baidu.com/)
     # 2. 获取您的 API Key (格式通常为 bce-v3/xxx 或直接的字符串)
     # 3. 将下方 "your_qianfan_api_key" 替换为您的真实 Key，或设置环境变量 QIANFAN_API_KEY
-
-    api_key = os.getenv("QIANFAN_API_KEY", "your_qianfan_api_key_here")
-
+    
+    # 百度千帆 OpenAI 兼容接口配置
+    QIANFAN_BASE_URL = "https://qianfan.baidubce.com/v2"
+    QIANFAN_MODEL = "ernie-4.0-8k-latest"
+    
+    # 获取 API Key（优先从环境变量读取，其次使用默认值）
+    api_key = os.getenv("QIANFAN_API_KEY")
+    
+    # 调试信息：打印当前配置状态
+    if debug_mode:
+        print(f"\n[DEBUG] 开始调试千帆大模型调用...")
+        print(f"[DEBUG] API Key 来源: {'环境变量' if api_key else '默认值'}")
+        print(f"[DEBUG] API Key 长度: {len(api_key) if api_key else 0} 字符")
+        print(f"[DEBUG] Base URL: {QIANFAN_BASE_URL}")
+        print(f"[DEBUG] Model: {QIANFAN_MODEL}")
+        print(f"[DEBUG] Prompt 长度: {len(prompt)} 字符")
+        print(f"[DEBUG] 最大重试次数: {max_retries}")
+        print(f"[DEBUG] 请求超时时间: {timeout}秒")
+    
+    # 如果没有配置 API Key，使用默认的演示 Key
+    if not api_key:
+        print("[DEBUG] 未从环境变量获取到 QIANFAN_API_KEY，使用代码中的默认 Key")
+        api_key = "API-KEYAPI-KEY"
+    
+    # 检查是否为占位符 Key
     if api_key == "your_qianfan_api_key_here":
-        return "⚠️ [系统提示] 检测到未配置百度千帆 API Key。请设置环境变量 QIANFAN_API_KEY 或在代码中填入您的 Key 以生成真实简报。\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
+        error_msg = "⚠️ [系统提示] 检测到未配置百度千帆 API Key。请设置环境变量 QIANFAN_API_KEY 或在代码中填入您的 Key 以生成真实简报。\n\n以下为基于规则生成的【模拟简报】：\n"
+        return error_msg + generate_mock_report()
+
+    # 网络预检查
+    print("\n[INFO] 正在进行网络连接检查...")
+    network_ok, network_msg = check_network_connectivity("qianfan.baidubce.com", 443, 5)
+    print(f"[INFO] {network_msg}")
+    
+    if not network_ok:
+        error_msg = f"❌ 网络连接失败: {network_msg}"
+        error_detail = "\n\n详细原因分析:\n1. 当前网络环境无法访问百度千帆服务器\n2. 防火墙或代理设置可能阻止了请求\n3. 请检查网络连接和防火墙设置\n4. 在浏览器中访问 https://qianfan.cloud.baidu.com/ 确认网络可达"
+        print(error_msg)
+        print(error_detail)
+        return error_msg + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
 
     # 初始化 OpenAI 客户端，指向百度千帆的 Base URL
     client = OpenAI(
         api_key=api_key,
-        base_url="https://qianfan.baidubce.com/v2"
+        base_url=QIANFAN_BASE_URL,
+        timeout=timeout
     )
-
-    try:
-        print("🤖 正在调用千帆大模型智能体进行深度分析，请稍候...")
-        response = client.chat.completions.create(
-            model="ernie-4.0-8k-latest",  # 推荐使用 ERNIE 4.0 获得最强逻辑分析能力
-            messages=[
-                {"role": "system", "content": "你是一个严谨的电网调度分析师，严格遵循Markdown格式输出。"},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,  # 较低的温度保证输出的严谨性和稳定性
-            top_p=0.8
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"❌ API 调用失败: {str(e)}"
+    
+    if debug_mode:
+        print(f"[DEBUG] OpenAI 客户端初始化成功")
+        print(f"[DEBUG] 客户端配置: api_key已设置, base_url={client.base_url}, timeout={timeout}秒")
+    
+    # 重试循环
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            print(f"\n[INFO] 正在调用千帆大模型智能体 (第 {attempt + 1}/{max_retries} 次尝试)...")
+            
+            # 调用大模型
+            print(f"[INFO] 请求模型: {QIANFAN_MODEL}")
+            print(f"[INFO] 请求参数: temperature=0.3, top_p=0.8")
+            
+            response = client.chat.completions.create(
+                model=QIANFAN_MODEL,
+                messages=[
+                    {"role": "system", "content": "你是一个严谨的电网调度分析师，严格遵循Markdown格式输出。"},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                top_p=0.8
+            )
+            
+            if debug_mode:
+                print(f"[DEBUG] API 响应成功")
+                print(f"[DEBUG] 响应对象类型: {type(response)}")
+                print(f"[DEBUG] 响应 ID: {response.id if hasattr(response, 'id') else 'N/A'}")
+            
+            # 提取响应内容
+            if hasattr(response, 'choices') and len(response.choices) > 0:
+                message = response.choices[0].message
+                if hasattr(message, 'content') and message.content:
+                    print(f"[INFO] 成功获取到报告内容，长度: {len(message.content)} 字符")
+                    return message.content
+                else:
+                    error_msg = f"❌ API 响应内容为空: message.content = {message.content}"
+                    print(error_msg)
+                    last_error = error_msg
+            else:
+                error_msg = f"❌ API 响应中没有 choices 字段或 choices 为空"
+                print(error_msg)
+                last_error = error_msg
+        
+        except AuthenticationError as e:
+            error_msg = f"❌ 认证错误 (AuthenticationError): {str(e)}"
+            error_detail = "\n详细原因分析:\n1. API Key 可能不正确或已过期\n2. API Key 格式可能有误（应为 bce-v3/xxx 格式）\n3. 账号可能未开通千帆 API 服务\n4. 请检查百度千帆控制台中的 API Key 配置"
+            print(error_msg)
+            print(error_detail)
+            return error_msg + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
+        
+        except APIConnectionError as e:
+            error_msg = f"❌ 连接错误 (APIConnectionError): {str(e)}"
+            print(f"[WARNING] 第 {attempt + 1} 次尝试失败: {error_msg}")
+            last_error = e
+            if attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 2
+                print(f"[INFO] {wait_time}秒后进行第 {attempt + 2} 次重试...")
+                time.sleep(wait_time)
+        
+        except RateLimitError as e:
+            error_msg = f"❌ 限流错误 (RateLimitError): {str(e)}"
+            error_detail = "\n详细原因分析:\n1. API 请求频率超过了限制\n2. 账号配额已用完\n3. 请稍后重试或联系百度千帆客服增加配额"
+            print(error_msg)
+            print(error_detail)
+            return error_msg + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
+        
+        except APIError as e:
+            error_msg = f"❌ API 错误 (APIError): {str(e)}"
+            
+            if 'account_overdue' in str(e):
+                error_detail = "\n详细原因分析:\n⚠️ 【重要】百度千帆账户欠费！\n1. 当前使用的API Key对应的百度千帆账户已欠费\n2. 请登录百度千帆控制台 (https://qianfan.cloud.baidu.com/) 检查账户余额\n3. 充值后即可恢复服务\n4. 如需更换API Key，请设置环境变量 QIANFAN_API_KEY"
+                print(error_msg)
+                print(error_detail)
+                return error_msg + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
+            else:
+                print(f"[WARNING] 第 {attempt + 1} 次尝试失败: {error_msg}")
+                last_error = e
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 2
+                    print(f"[INFO] {wait_time}秒后进行第 {attempt + 2} 次重试...")
+                    time.sleep(wait_time)
+        
+        except Exception as e:
+            error_msg = f"❌ 未知错误: {str(e)}"
+            print(f"[WARNING] 第 {attempt + 1} 次尝试失败: {error_msg}")
+            if debug_mode:
+                print("[DEBUG] 完整错误堆栈:")
+                traceback.print_exc()
+            last_error = e
+            if attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 2
+                print(f"[INFO] {wait_time}秒后进行第 {attempt + 2} 次重试...")
+                time.sleep(wait_time)
+    
+    # 所有重试都失败了
+    error_summary = f"❌ 所有 {max_retries} 次请求均失败，无法连接到百度千帆大模型服务。"
+    if last_error:
+        error_summary += f"\n最后一次错误: {str(last_error)}"
+    
+    error_detail = "\n\n详细原因分析:\n1. 网络连接问题，无法连接到百度千帆服务器\n2. 防火墙或代理设置可能阻止了请求\n3. 请检查网络连接和防火墙设置\n4. 尝试访问 https://qianfan.cloud.baidu.com/ 确认网络可达\n5. 请确认百度千帆账号余额充足且API Key有效"
+    
+    print(error_summary)
+    print(error_detail)
+    return error_summary + error_detail + "\n\n以下为基于规则生成的【模拟简报】：\n" + generate_mock_report()
 
 
 def generate_mock_report():
